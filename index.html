@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>테트리스 게임</title>
+  <style>
+      body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background: #282c34;
+          color: #fff;
+          font-family: Arial, sans-serif;
+      }
+      #game-board {
+          width: 200px;
+          height: 400px;
+          background: #111;
+          position: relative;
+          border: 2px solid #fff;
+      }
+      .block {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          background: #66f;
+          box-shadow: 0 0 5px rgba(0, 0, 255, 0.5);
+          animation: block-drop 0.5s ease-in-out;
+      }
+      @keyframes block-drop {
+          0% { transform: translateY(-20px); }
+          100% { transform: translateY(0); }
+      }
+      #score, #timer {
+          margin: 10px;
+          font-size: 1.2em;
+      }
+  </style>
+</head>
+<body>
+<div>
+  <div id="score">점수: 0</div>
+  <div id="timer">시간: 0초</div>
+  <div id="game-board"></div>
+</div>
+<script>
+  const board = document.getElementById('game-board');
+  const scoreElement = document.getElementById('score');
+  const timerElement = document.getElementById('timer');
+
+  let score = 0;
+  let timer = 0;
+  let gameInterval;
+  let timerInterval;
+
+  const boardWidth = 10;
+  const boardHeight = 20;
+  const blockSize = 20;
+
+  function startGame() {
+    gameInterval = setInterval(dropBlock, 1000);
+    timerInterval = setInterval(() => {
+      timer++;
+      timerElement.textContent = `시간: ${timer}초`;
+    }, 1000);
+  }
+
+  function dropBlock() {
+    const block = document.createElement('div');
+    block.classList.add('block');
+
+    let x = Math.floor(Math.random() * boardWidth) * blockSize;
+    let y = 0;
+    block.style.left = `${x}px`;
+    block.style.top = `${y}px`;
+    board.appendChild(block);
+
+    const fallInterval = setInterval(() => {
+      y += blockSize;
+      if (y < boardHeight * blockSize) {
+        block.style.top = `${y}px`;
+      } else {
+        clearInterval(fallInterval);
+        score += 10;
+        scoreElement.textContent = `점수: ${score}`;
+      }
+    }, 100);
+  }
+
+  startGame();
+</script>
+</body>
+</html>
