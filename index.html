@@ -13,80 +13,260 @@
           background: #282c34;
           color: #fff;
           font-family: Arial, sans-serif;
+          overflow: hidden; /* Prevent window scrolling */
+      }
+      #game-container {
+          display: flex;
+          align-items: flex-start;
+      }
+      #next-block {
+          width: 60px;
+          height: 60px;
+          background: #222;
+          margin-right: 20px;
+          border: 2px solid #fff;
+          position: relative;
       }
       #game-board {
-          width: 200px;
-          height: 400px;
+          width: 300px; /* Increased size by 0.5x */
+          height: 600px; /* Increased size by 0.5x */
           background: #111;
           position: relative;
           border: 2px solid #fff;
+          background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(to right, #333 1px, transparent 1px);
+          background-size: 30px 30px; /* Add grid lines */
       }
       .block {
           position: absolute;
-          width: 20px;
-          height: 20px;
+          width: 30px; /* Increased size by 0.5x */
+          height: 30px; /* Increased size by 0.5x */
           background: #66f;
           box-shadow: 0 0 5px rgba(0, 0, 255, 0.5);
-          animation: block-drop 0.5s ease-in-out;
       }
       @keyframes block-drop {
-          0% { transform: translateY(-20px); }
+          0% { transform: translateY(-30px); }
           100% { transform: translateY(0); }
       }
-      #score, #timer {
+      #score, #timer, #level {
           margin: 10px;
           font-size: 1.2em;
       }
   </style>
 </head>
 <body>
-<div>
-  <div id="score">점수: 0</div>
-  <div id="timer">시간: 0초</div>
+<div id="game-container">
+  <div>
+    <div id="score">점수: 0</div>
+    <div id="timer">시간: 0초</div>
+    <div id="level">단계: 1</div>
+    <div id="next-block"></div>
+  </div>
   <div id="game-board"></div>
 </div>
 <script>
   const board = document.getElementById('game-board');
   const scoreElement = document.getElementById('score');
   const timerElement = document.getElementById('timer');
+  const nextBlockElement = document.getElementById('next-block');
+  const levelElement = document.getElementById('level');
 
   let score = 0;
   let timer = 0;
   let gameInterval;
   let timerInterval;
+  let currentBlock;
+  let currentX = 0;
+  let currentY = 0;
+  let nextBlock;
+  let boardArray = Array.from({ length: 20 }, () => Array(10).fill(0));
+  let level = 1;
+  let linesCleared = 0;
 
   const boardWidth = 10;
   const boardHeight = 20;
-  const blockSize = 20;
+  const blockSize = 30; /* Increased size by 0.5x */
+
+  const tetrominoes = [
+    [[1, 1, 1, 1]], // I
+    [[1, 1], [1, 1]], // O
+    [[0, 1, 0], [1, 1, 1]], // T
+    [[1, 1, 0], [0, 1, 1]], // Z
+    [[0, 1, 1], [1, 1, 0]], // S
+    [[1, 0, 0], [1, 1, 1]], // L
+    [[0, 0, 1], [1, 1, 1]] // J
+  ];
 
   function startGame() {
+    nextBlock = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
     gameInterval = setInterval(dropBlock, 1000);
     timerInterval = setInterval(() => {
       timer++;
       timerElement.textContent = `시간: ${timer}초`;
     }, 1000);
+    document.addEventListener('keydown', handleKeyPress);
+    createBlock();
+  }
+
+  function createBlock() {
+    currentBlock = nextBlock;
+    nextBlock = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+    currentX = Math.floor(boardWidth / 2) - Math.ceil(currentBlock[0].length / 2);
+    currentY = 0;
+    drawNextBlock();
+    drawBlock();
+  }
+
+  function drawNextBlock() {
+    nextBlockElement.innerHTML = '';
+    nextBlock.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell) {
+          const block = document.createElement('div');
+          block.classList.add('block');
+          block.style.width = `${blockSize / 2}px`;
+          block.style.height = `${blockSize / 2}px`;
+          block.style.left = `${x * (blockSize / 2)}px`;
+          block.style.top = `${y * (blockSize / 2)}px`;
+          nextBlockElement.appendChild(block);
+        }
+      });
+    });
+  }
+
+  function drawBlock() {
+    board.innerHTML = '';
+    boardArray.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell) {
+          const block = document.createElement('div');
+          block.classList.add('block');
+          block.style.left = `${x * blockSize}px`;
+          block.style.top = `${y * blockSize}px`;
+          board.appendChild(block);
+        }
+      });
+    });
+
+    currentBlock.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell) {
+          const block = document.createElement('div');
+          block.classList.add('block');
+          block.style.left = `${(currentX + x) * blockSize}px`;
+          block.style.top = `${(currentY + y) * blockSize}px`;
+          board.appendChild(block);
+        }
+      });
+    });
   }
 
   function dropBlock() {
-    const block = document.createElement('div');
-    block.classList.add('block');
-
-    let x = Math.floor(Math.random() * boardWidth) * blockSize;
-    let y = 0;
-    block.style.left = `${x}px`;
-    block.style.top = `${y}px`;
-    board.appendChild(block);
-
-    const fallInterval = setInterval(() => {
-      y += blockSize;
-      if (y < boardHeight * blockSize) {
-        block.style.top = `${y}px`;
-      } else {
-        clearInterval(fallInterval);
-        score += 10;
-        scoreElement.textContent = `점수: ${score}`;
+    if (!canMove(0, 1)) {
+      mergeBlock();
+      clearFullLines();
+      score += 10 * level;
+      scoreElement.textContent = `점수: ${score}`;
+      createBlock();
+      if (!canMove(0, 0)) {
+        clearInterval(gameInterval);
+        clearInterval(timerInterval);
+        alert('게임 오버!');
       }
-    }, 100);
+    } else {
+      currentY++;
+      drawBlock();
+    }
+  }
+
+  function canMove(offsetX, offsetY) {
+    return currentBlock.every((row, y) => {
+      return row.every((cell, x) => {
+        if (cell) {
+          const newX = currentX + x + offsetX;
+          const newY = currentY + y + offsetY;
+          return (
+              newX >= 0 &&
+              newX < boardWidth &&
+              newY < boardHeight &&
+              (newY < 0 || boardArray[newY][newX] === 0)
+          );
+        }
+        return true;
+      });
+    });
+  }
+
+  function mergeBlock() {
+    currentBlock.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell) {
+          boardArray[currentY + y][currentX + x] = 1;
+        }
+      });
+    });
+  }
+
+  function clearFullLines() {
+    let linesBefore = boardArray.length;
+    boardArray = boardArray.filter(row => row.some(cell => cell === 0));
+    let linesClearedNow = linesBefore - boardArray.length;
+    linesCleared += linesClearedNow;
+
+    while (boardArray.length < boardHeight) {
+      boardArray.unshift(Array(boardWidth).fill(0));
+    }
+
+    if (linesCleared >= level * 10) {
+      level++;
+      levelElement.textContent = `단계: ${level}`;
+      clearInterval(gameInterval);
+      gameInterval = setInterval(dropBlock, 1000 - (level - 1) * 100);
+    }
+  }
+
+  function handleKeyPress(event) {
+    switch (event.key) {
+      case 'ArrowLeft':
+        if (canMove(-1, 0)) {
+          currentX--;
+          drawBlock();
+        }
+        break;
+      case 'ArrowRight':
+        if (canMove(1, 0)) {
+          currentX++;
+          drawBlock();
+        }
+        break;
+      case 'ArrowDown':
+        if (canMove(0, 1)) {
+          currentY++;
+          drawBlock();
+        }
+        break;
+      case 'ArrowUp':
+        rotateBlock();
+        drawBlock();
+        break;
+      case ' ': // Space key
+        while (canMove(0, 1)) {
+          currentY++;
+        }
+        drawBlock();
+        dropBlock();
+        break;
+    }
+  }
+
+  function rotateBlock() {
+    const rotatedBlock = currentBlock[0].map((_, index) =>
+        currentBlock.map(row => row[index]).reverse()
+    );
+    const previousBlock = currentBlock;
+    currentBlock = rotatedBlock;
+    if (!canMove(0, 0)) {
+      currentBlock = previousBlock;
+    }
   }
 
   startGame();
