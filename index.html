@@ -264,6 +264,15 @@
     );
     const previousBlock = currentBlock;
     currentBlock = rotatedBlock;
+
+    // Adjust position if rotation causes block to go out of bounds
+    while (currentX + currentBlock[0].length > boardWidth) {
+      currentX--;
+    }
+    while (currentX < 0) {
+      currentX++;
+    }
+
     if (!canMove(0, 0)) {
       currentBlock = previousBlock;
     }
