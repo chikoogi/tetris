@@ -1,0 +1,51 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background: #282c34;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+#game-container {
+  display: flex;
+  align-items: flex-start;
+}
+
+.hud-item {
+  margin: 10px;
+  font-size: 1.2em;
+}
+
+#next-block {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  margin-right: 20px;
+  background: #222;
+  border: 2px solid #fff;
+}
+
+/* 10 x 20 칸, 칸당 30px (js/config.js 와 맞춰야 함) */
+#game-board {
+  position: relative;
+  width: 300px;
+  height: 600px;
+  background: #111;
+  border: 2px solid #fff;
+  background-image:
+    linear-gradient(#333 1px, transparent 1px),
+    linear-gradient(to right, #333 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.block {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: #66f;
+  box-shadow: 0 0 5px rgba(0, 0, 255, 0.5);
+}
